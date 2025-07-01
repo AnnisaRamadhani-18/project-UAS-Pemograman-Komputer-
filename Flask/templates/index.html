@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Penjualan Cireng</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 2rem;
+    }
+    h1 {
+      color: #333;
+      text-align: center;
+    }
+    .form-container {
+      background-color: #fff;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
+      max-width: 800px;
+      position: fixed;
+      bottom: 2rem;
+      left: 2rem;
+      width: 300px;
+      display: none;
+    }
+    .table-container {
+      background-color: #fff;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    label {
+      display: block;
+      margin-top: 1rem;
+    }
+    input, select {
+      width: 100%;
+      padding: 0.6rem;
+      margin-top: 0.3rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      padding: 0.8rem 1.5rem;
+      margin-top: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #218838;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 0.75rem;
+      text-align: center;
+    }
+    th {
+      background-color: #007bff;
+      color: white;
+    }
+    .search-input {
+      margin-bottom: 1rem;
+      padding: 0.6rem;
+      width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    .actions button {
+      margin: 0 0.3rem;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+    }
+    .actions .delete-btn {
+      background-color: #dc3545;
+    }
+    .actions .update-btn {
+      background-color: #ffc107;
+      color: black;
+    }
+    #addProductBtn {
+      background-color: #007bff;
+      color: white;
+      padding: 0.8rem 1.5rem;
+      position: fixed;
+      top: 1rem;
+      left: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      z-index: 10;
+    }
+    #addProductBtn:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <h1>Penjualan Cireng</h1>
+
+  <!-- Tombol Tambah Produk -->
+  <button id="addProductBtn">Tambah Produk</button>
+
+  <!-- Form untuk tambah atau update data -->
+  <div class="form-container" id="formContainer">
+    <h2>Tambah / Update Penjualan Cireng</h2>
+    <form id="cirengForm">
+      <label for="nama_pembeli">Nama Pembeli:</label>
+      <input type="text" id="nama_pembeli" name="nama_pembeli" required />
+
+      <label for="rasa_cireng">Rasa Cireng:</label>
+      <select id="rasa_cireng" name="rasa_cireng">
+        <option value="Original">Original</option>
+        <option value="Pedas">Pedas</option>
+        <option value="Keju">Keju</option>
+        <option value="BBQ">BBQ</option>
+      </select>
+
+      <label for="tanggal_beli">Tanggal Beli:</label>
+      <input type="date" id="tanggal_beli" name="tanggal_beli" />
+
+      <label for="jumlah_porsi">Jumlah Porsi:</label>
+      <input type="number" id="jumlah_porsi" name="jumlah_porsi" required min="1" />
+
+      <button type="submit">Simpan</button>
+    </form>
+  </div>
+
+  <!-- Data tabel penjualan -->
+  <div class="table-container">
+    <h2>Data Penjualan Cireng</h2>
+    <input type="text" id="search" class="search-input" placeholder="Cari berdasarkan nama pembeli..." />
+    <table id="dataTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nama Pembeli</th>
+          <th>Rasa Cireng</th>
+          <th>Tanggal Beli</th>
+          <th>Jumlah Porsi</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const API_URL = 'http://localhost:5000/penjualan_cireng';
+      const form = document.getElementById('cirengForm');
+      const tableBody = document.querySelector('#dataTable tbody');
+      const searchInput = document.getElementById('search');
+      const formContainer = document.getElementById('formContainer');
+      const addProductBtn = document.getElementById('addProductBtn');
+      let editingId = null;
+
+      const loadData = async () => {
+        try {
+          const res = await fetch(API_URL);
+          const data = await res.json();
+          renderTable(data);
+        } catch {
+          alert("Gagal mengambil data dari server.");
+        }
+      };
+
+      const renderTable = (data) => {
+        tableBody.innerHTML = '';
+        data.forEach(item => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${item.id}</td>
+            <td>${item.nama_pembeli}</td>
+            <td>${item.rasa_cireng}</td>
+            <td>${item.tanggal_beli}</td>
+            <td>${item.jumlah_porsi}</td>
+            <td class="actions">
+              <button class="delete-btn" data-id="${item.id}">Hapus</button>
+              <button class="update-btn"
+                data-id="${item.id}"
+                data-nama="${item.nama_pembeli}"
+                data-rasa="${item.rasa_cireng}"
+                data-tanggal="${item.tanggal_beli}"
+                data-jumlah="${item.jumlah_porsi}">Update</button>
+            </td>
+          `;
+          tableBody.appendChild(row);
+        });
+
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const id = btn.dataset.id;
+            if (confirm("Yakin ingin menghapus data ini?")) {
+              const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+              if (res.ok) {
+                alert("Data berhasil dihapus!");
+                loadData();
+              } else {
+                alert("Gagal menghapus data.");
+              }
+            }
+          });
+        });
+
+        document.querySelectorAll('.update-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            form.nama_pembeli.value = btn.dataset.nama;
+            form.rasa_cireng.value = btn.dataset.rasa;
+            form.tanggal_beli.value = btn.dataset.tanggal;
+            form.jumlah_porsi.value = btn.dataset.jumlah;
+            editingId = btn.dataset.id;
+            form.querySelector('button[type="submit"]').textContent = "Update Data";
+            formContainer.style.display = 'block';
+          });
+        });
+      };
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = {
+          nama_pembeli: form.nama_pembeli.value,
+          rasa_cireng: form.rasa_cireng.value,
+          tanggal_beli: form.tanggal_beli.value,
+          jumlah_porsi: parseInt(form.jumlah_porsi.value)
+        };
+
+        const method = editingId ? 'PUT' : 'POST';
+        const url = editingId ? `${API_URL}/${editingId}` : API_URL;
+
+        try {
+          const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+          });
+
+          if (res.ok) {
+            alert(editingId ? "Data berhasil diupdate!" : "Data berhasil ditambahkan!");
+            editingId = null;
+            form.reset();
+            form.querySelector('button[type="submit"]').textContent = "Simpan";
+            formContainer.style.display = 'none';
+            loadData();
+          } else {
+            const err = await res.json();
+            alert("Gagal: " + err.error);
+          }
+        } catch {
+          alert("Terjadi kesalahan saat mengirim data.");
+        }
+      });
+
+      searchInput.addEventListener('input', () => {
+        const term = searchInput.value.toLowerCase();
+        [...tableBody.rows].forEach(row => {
+          const name = row.cells[1].textContent.toLowerCase();
+          row.style.display = name.includes(term) ? '' : 'none';
+        });
+      });
+
+      // Menampilkan form tambah produk saat tombol "Tambah Produk" diklik
+      addProductBtn.addEventListener('click', () => {
+        form.reset();
+        form.querySelector('button[type="submit"]').textContent = "Simpan";
+        formContainer.style.display = 'block';
+      });
+
+      loadData();
+    });
+  </script>
+
+</body>
+</html>
